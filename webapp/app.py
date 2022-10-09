@@ -5,12 +5,11 @@ import mediapipe as mp
 import tensorflow as tf
 import gc
 import os
-from psutil import Process
 
 app = Flask(__name__)
 
 @app.route("/")
-def home(request):
+def home():
     return "Asd"
 
 
@@ -20,19 +19,17 @@ def send_video():
     idSign = request.form.get('idSign')
     categorySign = request.form.get('categorySign')
     response = predict(video, idSign, categorySign)
-    m1 = Process().memory_info().rss
     print("FINALIZANDO")
-    print(m1)
     if video is None:
         return "No se envio el video"
     str_response = str(response[0].copy)
     del response
     gc.collect
-    Process().terminate
     return str_response
     
 if __name__ == '__main__':
-    app.run
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
 
 
 
@@ -91,9 +88,7 @@ def frames_extraction(video_memory, categoria):
     skip_frames_window = max(int(video_frames_count/SEQUENCE_LENGTH), 1)
     # Iterate through the Video Frames.
     mp_holistic = mp.solutions.holistic # Holistic model
-    m1 = Process().memory_info().rss
     print("ANTES")
-    print(m1)
     for frame_counter in range(SEQUENCE_LENGTH):
       #t = threading.Thread(target=magia_2, args=(video_reader, skip_frames_window, frame_counter,  ))
       #t.start()
@@ -120,10 +115,8 @@ def frames_extraction(video_memory, categoria):
         keypoint = np.concatenate([pose_arr, face_arr, lh_arr, rh_arr])
         keypoint_arr = keypoint[:1662].copy()
         del keypoint
-        gc.collect()
         keypoints.append(keypoint_arr)
-        m1 = Process().memory_info().rss
-        print(m1)
+        gc.collect()
     del mp_holistic
     gc.collect()
     return keypoints
@@ -136,19 +129,17 @@ def predict(video, sena, categoria):
     print("Cargue el modelo")
     keypoints = frames_extraction(video, categoria)
     print("Extraje los frames")
-    key_copy = keypoints.copy()
-    test_keypoints = list(key_copy)
-    del keypoints
+    test_keypoints = list(keypoints)
     list_test = list()
     list_test.append(test_keypoints)
     lista = np.array(list_test)
     nueva_lista = lista.copy()
+    del keypoints
+    del list_test
     del lista
-    predictions = model.predict(nueva_lista)
+    predictions = model.predict(nueva_lista).copy()
+    del nueva_lista
     print("Ya predije")
-    m1 = Process().memory_info().rss
-    print(m1)
     del nueva_lista
     gc.collect()
-    Process().kill
     return predictions
