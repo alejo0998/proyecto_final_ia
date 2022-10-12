@@ -11,3 +11,4 @@ Werkzeug
 httplib2
 python-dateutil
 python-decouple
+dask
