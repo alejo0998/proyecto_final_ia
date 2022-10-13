@@ -5,6 +5,8 @@ import os
 import dask.bag as db
 
 semaforo = multiprocessing.Semaphore(1); #Crear variable semáforo
+semaforo_2 = multiprocessing.Semaphore(1); #Crear variable semáforo
+
 app = Flask(__name__)
 
 @app.route("/")
@@ -28,16 +30,6 @@ def run_in_subprocess(it, func):
     semaforo.release()
 
     return ret
-
-SEM = False
-class Video():
-
-  def __init__(self):
-    self.frames = []
-    self.keypoints = []
-    self.label = ""
-    self.path = ""
-
 
 def mediapipe_detection(image, model):
     import cv2
@@ -99,7 +91,6 @@ def frames_extraction(nombre_archivo):
         keypoints.append(np.concatenate([pose, face, lh, rh]))
         print (keypoints)
     video_reader.release()
-    
     return keypoints
 
 
@@ -107,6 +98,7 @@ def frames_extraction(nombre_archivo):
 def send_video():
     import tensorflow as tf
     import numpy as np
+    semaforo_2.acquire()
     video = request.files.get('video')
     position = request.form.get('position')
     category = request.form.get('category')
@@ -124,7 +116,9 @@ def send_video():
     gc.collect()
     if video is None:
         return "No se envio el video"
-    return str(predictions[0][int(position)])
+    semaforo_2.release()    
+    max = np.argmax(predictions[0])
+    return str(max == int(position))
     
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
