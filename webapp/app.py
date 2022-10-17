@@ -92,6 +92,53 @@ def frames_extraction(nombre_archivo):
         print (keypoints)
     video_reader.release()
     return keypoints
+    
+def frames_extraction_web(nombre_archivo):
+    import numpy as np
+    import mediapipe as mp
+    import cv2
+    print("Estoy extrayendo los frames")
+    '''
+    This function will extract the required frames from a video after resizing and normalizing them.
+    Args:
+        video_path: The path of the video in the disk, whose frames are to be extracted.
+    Returns:
+        frames_list: A list containing the resized and normalized frames of the video.
+    '''
+    # Declare a list to store video frames.
+    #frames_list = []
+    results = []
+
+    keypoints = list()
+    # Read the Video File using the VideoCapture object.
+
+    video_reader = cv2.VideoCapture(nombre_archivo)
+    # Get the total number of frames in the video.
+    video_frames_count = int(video_reader.get(cv2.CAP_PROP_FRAME_COUNT))
+    video_frames_count = 60
+    # Calculate the the interval after which frames will be added to the list.
+    skip_frames_window = max(int(video_frames_count/SEQUENCE_LENGTH), 1)
+    # Iterate through the Video Frames.
+    mp_holistic = mp.solutions.holistic # Holistic model
+    pos = 1
+    print("ANTES")
+    for frame_counter in range(SEQUENCE_LENGTH):
+      print(frame_counter)
+      video_reader.set(120, frame_counter*2 )
+      pos = pos + frame_counter*2
+      success, frame = video_reader.read()
+      if not success:
+          return "Error"
+      with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+        _, results = mediapipe_detection(cv2.resize(frame, (IMAGE_WIDTH, IMAGE_HEIGHT)), holistic)
+        pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else zero(33*4,"pose")
+        face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else zero(468*3,"cara")
+        lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else zero(21*3,"mano izq")
+        rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else zero(21*3,"mano der")
+        keypoints.append(np.concatenate([pose, face, lh, rh]))
+        print (keypoints)
+    video_reader.release()
+    return keypoints
 
 
 @app.route("/send_video", methods=["POST"])
@@ -105,7 +152,7 @@ def send_video():
     nombre_archivo = video.filename
     video.save(dst=nombre_archivo)
     print(nombre_archivo) 
-    result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction)
+    result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction_web)
     keypoints = result.compute()
     file_name = './modelos/' + str(category) + ".h5"
     predictions = tf.keras.models.load_model(file_name, compile = True).predict(np.asarray(keypoints))
