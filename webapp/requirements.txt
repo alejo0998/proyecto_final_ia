@@ -9,6 +9,5 @@ gunicorn
 Jinja2
 Werkzeug
 httplib2
-python-dateutil
 python-decouple
 dask

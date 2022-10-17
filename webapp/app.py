@@ -3,11 +3,17 @@ from flask import Flask, request
 import gc
 import os
 import dask.bag as db
+from flask_cors import CORS, cross_origin
 
+
+
+if __name__ == "__main__":
+  app.run(host='0.0.0.0', port=8000, debug=True)
 semaforo = multiprocessing.Semaphore(1); #Crear variable semáforo
 semaforo_2 = multiprocessing.Semaphore(1); #Crear variable semáforo
 
 app = Flask(__name__)
+CORS(app, support_credentials=True)
 
 @app.route("/")
 def home():
@@ -53,6 +59,7 @@ def frames_extraction(nombre_archivo):
     import numpy as np
     import mediapipe as mp
     import cv2
+
     print("Estoy extrayendo los frames")
     '''
     This function will extract the required frames from a video after resizing and normalizing them.
@@ -95,6 +102,7 @@ def frames_extraction(nombre_archivo):
 
 
 @app.route("/send_video", methods=["POST"])
+@cross_origin(supports_credentials=True)
 def send_video():
     import tensorflow as tf
     import numpy as np
