@@ -149,10 +149,15 @@ def send_video():
     video = request.files.get('video')
     position = request.form.get('position')
     category = request.form.get('category')
+    web = request.form.get('web')
     nombre_archivo = video.filename
     video.save(dst=nombre_archivo)
-    print(nombre_archivo) 
-    result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction_web)
+    print(nombre_archivo)
+    result = None
+    if web: 
+        result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction_web)
+    else:
+        result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction)
     keypoints = result.compute()
     file_name = './modelos/' + str(category) + ".h5"
     predictions = tf.keras.models.load_model(file_name, compile = True).predict(np.asarray(keypoints))
