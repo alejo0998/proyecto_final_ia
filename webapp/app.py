@@ -3,11 +3,15 @@ from flask import Flask, request
 import gc
 import os
 import dask.bag as db
+from flask_cors import CORS
+
+
 
 semaforo = multiprocessing.Semaphore(1); #Crear variable semáforo
 semaforo_2 = multiprocessing.Semaphore(1); #Crear variable semáforo
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route("/")
 def home():
