@@ -90,27 +90,27 @@ if __name__ == '__main__':
         mp_holistic = mp.solutions.holistic # Holistic model
         print("ANTES")
         for frame_counter in range(SEQUENCE_LENGTH):
-        print(frame_counter)
-        video_reader.set(cv2.CAP_PROP_POS_FRAMES, frame_counter * skip_frames_window)
-        success, frame = video_reader.read()
-        if not success:
-            return "Error"
-        with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-            _, results = mediapipe_detection(cv2.resize(frame, (IMAGE_WIDTH, IMAGE_HEIGHT)), holistic)
-            pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else zero(33*4,"pose",0)
-            face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else zero(468*3,"cara",1)
-            lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else zero(21*3,"mano izq",2)
-            rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else zero(21*3,"mano der",3)
-            if results.pose_landmarks is None:
-                errores[0]+=1
-            if results.face_landmarks is None:
-                errores[1]+=1
-            if results.left_hand_landmarks is None:
-                errores[2]+=1
-            if results.right_hand_landmarks is None:
-                errores[3]+=1
-            keypoints.append(np.concatenate([pose, face, lh, rh]))
-            print (keypoints)
+            print(frame_counter)
+            video_reader.set(cv2.CAP_PROP_POS_FRAMES, frame_counter * skip_frames_window)
+            success, frame = video_reader.read()
+            if not success:
+                return "Error"
+            with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+                _, results = mediapipe_detection(cv2.resize(frame, (IMAGE_WIDTH, IMAGE_HEIGHT)), holistic)
+                pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else zero(33*4,"pose",0)
+                face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else zero(468*3,"cara",1)
+                lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else zero(21*3,"mano izq",2)
+                rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else zero(21*3,"mano der",3)
+                if results.pose_landmarks is None:
+                    errores[0]+=1
+                if results.face_landmarks is None:
+                    errores[1]+=1
+                if results.left_hand_landmarks is None:
+                    errores[2]+=1
+                if results.right_hand_landmarks is None:
+                    errores[3]+=1
+                keypoints.append(np.concatenate([pose, face, lh, rh]))
+                print (keypoints)
         video_reader.release()
         keypoints.append(errores)
         return keypoints
@@ -149,26 +149,26 @@ if __name__ == '__main__':
         pos = 1
         print("ANTES")
         for frame_counter in range(SEQUENCE_LENGTH):
-        print(frame_counter)
-        success, frame = video_reader.read()
-        if not success:
-            return "Error"
-        with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-            _, results = mediapipe_detection(cv2.rotate(cv2.resize(frame, (IMAGE_WIDTH, IMAGE_HEIGHT)), cv2.ROTATE_180), holistic)
-            pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else zero(33*4,"pose")
-            face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else zero(468*3,"cara")
-            lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else zero(21*3,"mano izq")
-            rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else zero(21*3,"mano der")
-            if results.pose_landmarks is None:
-                errores[0]+=1
-            if results.face_landmarks is None:
-                errores[1]+=1
-            if results.left_hand_landmarks is None:
-                errores[2]+=1
-            if results.right_hand_landmarks is None:
-                errores[3]+=1
-            keypoints.append(np.concatenate([pose, face, lh, rh]))
-            print (keypoints)
+            print(frame_counter)
+            success, frame = video_reader.read()
+            if not success:
+                return "Error"
+            with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+                _, results = mediapipe_detection(cv2.rotate(cv2.resize(frame, (IMAGE_WIDTH, IMAGE_HEIGHT)), cv2.ROTATE_180), holistic)
+                pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else zero(33*4,"pose")
+                face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else zero(468*3,"cara")
+                lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else zero(21*3,"mano izq")
+                rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else zero(21*3,"mano der")
+                if results.pose_landmarks is None:
+                    errores[0]+=1
+                if results.face_landmarks is None:
+                    errores[1]+=1
+                if results.left_hand_landmarks is None:
+                    errores[2]+=1
+                if results.right_hand_landmarks is None:
+                    errores[3]+=1
+                keypoints.append(np.concatenate([pose, face, lh, rh]))
+                print (keypoints)
         video_reader.release()
         keypoints.append(errores)
         return keypoints
