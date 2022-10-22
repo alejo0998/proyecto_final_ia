@@ -6,7 +6,6 @@ import dask.bag as db
 from flask_cors import CORS
 
 
-
 semaforo = multiprocessing.Semaphore(1); #Crear variable semáforo
 semaforo_2 = multiprocessing.Semaphore(1); #Crear variable semáforo
 
@@ -20,6 +19,7 @@ def home():
 IMAGE_HEIGHT , IMAGE_WIDTH = 320, 180 
 SEQUENCE_LENGTH = 30
 DATASET_DIR = '../media' 
+
 
 def return_in_queue(queue, func, it):
     queue.put(func(it))
@@ -68,7 +68,11 @@ def frames_extraction(nombre_archivo):
     # Declare a list to store video frames.
     #frames_list = []
     results = []
-
+    errores = []
+    errores.append(0)
+    errores.append(0)
+    errores.append(0)
+    errores.append(0)
     keypoints = list()
     # Read the Video File using the VideoCapture object.
 
@@ -88,13 +92,22 @@ def frames_extraction(nombre_archivo):
           return "Error"
       with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
         _, results = mediapipe_detection(cv2.resize(frame, (IMAGE_WIDTH, IMAGE_HEIGHT)), holistic)
-        pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else zero(33*4,"pose")
-        face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else zero(468*3,"cara")
-        lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else zero(21*3,"mano izq")
-        rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else zero(21*3,"mano der")
+        pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else zero(33*4,"pose",0)
+        face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else zero(468*3,"cara",1)
+        lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else zero(21*3,"mano izq",2)
+        rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else zero(21*3,"mano der",3)
+        if results.pose_landmarks is None:
+            errores[0]+=1
+        if results.face_landmarks is None:
+            errores[1]+=1
+        if results.left_hand_landmarks is None:
+            errores[2]+=1
+        if results.right_hand_landmarks is None:
+            errores[3]+=1
         keypoints.append(np.concatenate([pose, face, lh, rh]))
         print (keypoints)
     video_reader.release()
+    keypoints.append(errores)
     return keypoints
     
 def frames_extraction_web(nombre_archivo):
@@ -112,7 +125,11 @@ def frames_extraction_web(nombre_archivo):
     # Declare a list to store video frames.
     #frames_list = []
     results = []
-
+    errores = []
+    errores.append(0)
+    errores.append(0)
+    errores.append(0)
+    errores.append(0)
     keypoints = list()
     # Read the Video File using the VideoCapture object.
 
@@ -137,9 +154,18 @@ def frames_extraction_web(nombre_archivo):
         face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else zero(468*3,"cara")
         lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else zero(21*3,"mano izq")
         rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else zero(21*3,"mano der")
+        if results.pose_landmarks is None:
+            errores[0]+=1
+        if results.face_landmarks is None:
+            errores[1]+=1
+        if results.left_hand_landmarks is None:
+            errores[2]+=1
+        if results.right_hand_landmarks is None:
+            errores[3]+=1
         keypoints.append(np.concatenate([pose, face, lh, rh]))
         print (keypoints)
     video_reader.release()
+    keypoints.append(errores)
     return keypoints
 
 
@@ -156,26 +182,45 @@ def send_video():
     video.save(dst=nombre_archivo)
     print(nombre_archivo)
     result = None
+    if video is None:
+        return "No se envio el video"
     if web: 
         result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction_web)
     else:
         result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction)
-    keypoints = result.compute()
+    respuesta = result.compute()
     file_name = './modelos/' + str(category) + ".h5"
-    predictions = tf.keras.models.load_model(file_name, compile = True).predict(np.asarray(keypoints))
+    cantidad_errores = respuesta[0].pop(30)
+    predictions = tf.keras.models.load_model(file_name, compile = True).predict(np.asarray(respuesta))
     print("FINALIZANDO")
     os.remove(nombre_archivo)
-    del result
-    del keypoints
-    gc.collect()
-    if video is None:
-        return "No se envio el video"
+    message = ''
+    i = 0
+    for cantidad in cantidad_errores:
+        if cantidad>15:
+            if i == 0:
+                message += "No se pudo detectar la pose\n"
+            elif i ==1:
+                message += "No se pudo detectar la cara\n"
+            elif i == 2:
+                message += "No se pudo detectar la mano izquierda\n"
+            elif i == 3:
+                message += "No se pudo detectar la mano derecha\n"
+        i+=1
+    if message != '':
+        respuesta = {
+        'response': message,
+        'validation': 'REINTENTAR',
+        'prediction': str(predictions)
+        }
+        return respuesta
     semaforo_2.release()    
     max = np.argmax(predictions[0])
     booleano = (max == int(position))
     respuesta = {
         'response': "La seña realizada es correcta" if booleano else "La seña realizada es incorrecta",
-        'validation': booleano
+        'validation': 'CORRECTA' if booleano else 'INCORRECTA',
+        'prediction': str(predictions)
     }
     return respuesta
     
