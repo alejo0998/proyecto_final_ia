@@ -27,10 +27,11 @@ def send_video():
     result = None
     if video is None:
         return "No se envio el video"
-    if web: 
-        result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction_web)
+    if web:
+        proceso = ProcesoPrueba()
+        result = db.from_sequence([nombre_archivo], partition_size=1).map(proceso.run_in_subprocess, frames_extraction_web)
     else:
-        result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction)
+        result = db.from_sequence([nombre_archivo], partition_size=1).map(proceso.run_in_subprocess, frames_extraction)
     respuesta = result.compute()
     file_name = './modelos/' + str(category) + ".h5"
     cantidad_errores = respuesta[0].pop(30)
@@ -75,20 +76,19 @@ IMAGE_HEIGHT , IMAGE_WIDTH = 320, 180
 SEQUENCE_LENGTH = 30
 DATASET_DIR = '../media' 
 
+class ProcesoPrueba():
+    def return_in_queue(self, queue, func, it):
+        queue.put(func(it))
 
-def return_in_queue(queue, func, it):
-    queue.put(func(it))
-
-def run_in_subprocess(it, func):    
-    #semaforo.acquire()
-    queue = multiprocessing.Queue()
-    process = multiprocessing.Process(target=return_in_queue, args=(queue, func, it))
-    process.start()
-    ret = queue.get()
-    process.join()
-    #semaforo.release()
-
-    return ret
+    def run_in_subprocess(self, it, func):    
+        #semaforo.acquire()
+        queue = multiprocessing.Queue()
+        process = multiprocessing.Process(target=self.return_in_queue, args=(queue, func, it))
+        process.start()
+        ret = queue.get()
+        process.join()
+        #semaforo.release()
+        return ret
 
 def mediapipe_detection(image, model):
     import cv2
@@ -226,5 +226,6 @@ def frames_extraction_web(nombre_archivo):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=8080, debug=True)
+    
     
    
