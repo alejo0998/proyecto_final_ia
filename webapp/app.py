@@ -25,16 +25,11 @@ def return_in_queue(queue, func, it):
 
 def run_in_subprocess(it, func):    
     #semaforo.acquire()
-    import multiprocessing
-    multiprocessing.set_start_method("fork")
     queue = multiprocessing.Queue()
-    p = multiprocessing.Process(target=return_in_queue, args=(queue, func, it))
-    p.start()
-    #queue = multiprocessing.Queue()
-    #process = multiprocessing.Process(target=return_in_queue, args=(queue, func, it))
-    #process.start()
+    process = multiprocessing.Process(target=return_in_queue, args=(queue, func, it))
+    process.start()
     ret = queue.get()
-    #process.join()
+    process.join()
     #semaforo.release()
 
     return ret
