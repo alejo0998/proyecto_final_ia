@@ -1,7 +1,7 @@
 import multiprocessing
 from flask import Flask, request
 import os
-import dask as db
+import dask.bag as db
 from flask_cors import CORS
 
 
@@ -184,9 +184,9 @@ def send_video():
     if video is None:
         return "No se envio el video"
     if web: 
-        result = db.bag.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction_web)
+        result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction_web)
     else:
-        result = db.bag.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction)
+        result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction)
     respuesta = result.compute()
     file_name = './modelos/' + str(category) + ".h5"
     cantidad_errores = respuesta[0].pop(30)
