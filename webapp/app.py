@@ -154,6 +154,17 @@ def frames_extraction_web(nombre_archivo):
     keypoints.append(errores)
     return keypoints
 
+def run_in_subprocess(it, func):    
+    #semaforo.acquire()
+    import pdb; pdb.set_trace()
+    queue = multiprocessing.Queue()
+    process = multiprocessing.Process(target=queuereturn, args=(queue, func, it))
+    process.start()
+    ret = queue.get()
+    process.join()
+    #semaforo.release()
+
+    return ret
 
 @app.route("/send_video", methods=["POST"])
 def send_video():
@@ -217,14 +228,4 @@ if __name__ == '__main__':
     def queuereturn(queue, func, it):
         queue.put(func(it))
 
-    def run_in_subprocess(it, func):    
-        #semaforo.acquire()
-        queue = multiprocessing.Queue()
-        process = multiprocessing.Process(target=queuereturn, args=(queue, func, it))
-        process.start()
-        ret = queue.get()
-        process.join()
-        #semaforo.release()
-
-        return ret
 
