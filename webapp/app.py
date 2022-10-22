@@ -20,13 +20,13 @@ SEQUENCE_LENGTH = 30
 DATASET_DIR = '../media' 
 
 
-def return_in_queue(queue, func, it):
+def queuereturn(queue, func, it):
     queue.put(func(it))
 
 def run_in_subprocess(it, func):    
     #semaforo.acquire()
     queue = multiprocessing.Queue()
-    process = multiprocessing.Process(target=return_in_queue, args=(queue, func, it))
+    process = multiprocessing.Process(target=queuereturn, args=(queue, func, it))
     process.start()
     ret = queue.get()
     process.join()
