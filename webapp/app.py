@@ -20,19 +20,6 @@ SEQUENCE_LENGTH = 30
 DATASET_DIR = '../media' 
 
 
-def queuereturn(queue, func, it):
-    queue.put(func(it))
-
-def run_in_subprocess(it, func):    
-    #semaforo.acquire()
-    queue = multiprocessing.Queue()
-    process = multiprocessing.Process(target=queuereturn, args=(queue, func, it))
-    process.start()
-    ret = queue.get()
-    process.join()
-    #semaforo.release()
-
-    return ret
 
 def mediapipe_detection(image, model):
     import cv2
@@ -227,4 +214,17 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=8080, debug=True)
 
+    def queuereturn(queue, func, it):
+        queue.put(func(it))
+
+    def run_in_subprocess(it, func):    
+        #semaforo.acquire()
+        queue = multiprocessing.Queue()
+        process = multiprocessing.Process(target=queuereturn, args=(queue, func, it))
+        process.start()
+        ret = queue.get()
+        process.join()
+        #semaforo.release()
+
+        return ret
 
