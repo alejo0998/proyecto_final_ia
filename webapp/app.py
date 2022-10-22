@@ -1,13 +1,12 @@
 import multiprocessing
 from flask import Flask, request
-import gc
 import os
-import dask.bag as db
+import dask as db
 from flask_cors import CORS
 
 
-semaforo = multiprocessing.Semaphore(1); #Crear variable semáforo
-semaforo_2 = multiprocessing.Semaphore(1); #Crear variable semáforo
+#semaforo = multiprocessing.Semaphore(1); #Crear variable semáforo
+#semaforo_2 = multiprocessing.Semaphore(1); #Crear variable semáforo
 
 app = Flask(__name__)
 CORS(app)
@@ -25,13 +24,13 @@ def return_in_queue(queue, func, it):
     queue.put(func(it))
 
 def run_in_subprocess(it, func):    
-    semaforo.acquire()
+    #semaforo.acquire()
     queue = multiprocessing.Queue()
     process = multiprocessing.Process(target=return_in_queue, args=(queue, func, it))
     process.start()
     ret = queue.get()
     process.join()
-    semaforo.release()
+    #semaforo.release()
 
     return ret
 
@@ -173,7 +172,7 @@ def frames_extraction_web(nombre_archivo):
 def send_video():
     import tensorflow as tf
     import numpy as np
-    semaforo_2.acquire()
+    #semaforo_2.acquire()
     video = request.files.get('video')
     position = request.form.get('position')
     category = request.form.get('category')
@@ -185,9 +184,9 @@ def send_video():
     if video is None:
         return "No se envio el video"
     if web: 
-        result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction_web)
+        result = db.bag.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction_web)
     else:
-        result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction)
+        result = db.bag.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction)
     respuesta = result.compute()
     file_name = './modelos/' + str(category) + ".h5"
     cantidad_errores = respuesta[0].pop(30)
@@ -214,7 +213,7 @@ def send_video():
         'prediction': str(predictions)
         }
         return respuesta
-    semaforo_2.release()    
+    #semaforo_2.release()    
     max = np.argmax(predictions[0])
     booleano = (max == int(position))
     respuesta = {
