@@ -190,23 +190,26 @@ def send_video():
         result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction)
     respuesta = result.compute()
     file_name = './modelos/' + str(category) + ".h5"
-    cantidad_errores = respuesta[0].pop(30)
+    cantidad_errores = None
+    if len(respuesta[0])==31:
+        cantidad_errores = respuesta[0].pop(30)
     predictions = tf.keras.models.load_model(file_name, compile = True).predict(np.asarray(respuesta))
     print("FINALIZANDO")
     os.remove(nombre_archivo)
     message = ''
     i = 0
-    for cantidad in cantidad_errores:
-        if cantidad>15:
-            if i == 0:
-                message += "No se pudo detectar la pose\n"
-            elif i ==1:
-                message += "No se pudo detectar la cara\n"
-            elif i == 2:
-                message += "No se pudo detectar la mano izquierda\n"
-            elif i == 3:
-                message += "No se pudo detectar la mano derecha\n"
-        i+=1
+    if cantidad_errores:
+        for cantidad in cantidad_errores:
+            if cantidad>15:
+                if i == 0:
+                    message += "No se pudo detectar la pose\n"
+                elif i ==1:
+                    message += "No se pudo detectar la cara\n"
+                elif i == 2:
+                    message += "No se pudo detectar la mano izquierda\n"
+                elif i == 3:
+                    message += "No se pudo detectar la mano derecha\n"
+            i+=1
     if message != '':
         respuesta = {
         'response': message,
