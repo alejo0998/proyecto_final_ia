@@ -174,6 +174,7 @@ def send_video():
     import tensorflow as tf
     import numpy as np
     semaforo_2.acquire()
+    
     video = request.files.get('video')
     position = request.form.get('position')
     category = request.form.get('category')
@@ -189,6 +190,7 @@ def send_video():
     else:
         result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction)
     respuesta = result.compute()
+    breakpoint()
     file_name = './modelos/' + str(category) + ".h5"
     cantidad_errores = respuesta[0].pop(30)
     predictions = tf.keras.models.load_model(file_name, compile = True).predict(np.asarray(respuesta))
