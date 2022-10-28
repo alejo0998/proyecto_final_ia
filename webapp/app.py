@@ -184,7 +184,7 @@ def send_video():
     result = None
     if video is None:
         return "No se envio el video"
-    if web: 
+    if web == 'true': 
         result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction_web)
     else:
         result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction)
