@@ -202,13 +202,13 @@ def send_video():
         for cantidad in cantidad_errores:
             if cantidad>15:
                 if i == 0:
-                    message += "No se pudo detectar la pose\n"
+                    message += "No se pudo detectar la pose \n"
                 elif i ==1:
-                    message += "No se pudo detectar la cara\n"
+                    message += "No se pudo detectar la cara \n"
                 elif i == 2:
-                    message += "No se pudo detectar la mano izquierda\n"
+                    message += "No se pudo detectar la mano izquierda \n"
                 elif i == 3:
-                    message += "No se pudo detectar la mano derecha\n"
+                    message += "No se pudo detectar la mano derecha \n"
             i+=1
     if message != '':
         respuesta = {
