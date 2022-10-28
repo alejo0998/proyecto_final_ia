@@ -16,7 +16,7 @@ CORS(app)
 def home():
     return "Asd"
 
-IMAGE_HEIGHT , IMAGE_WIDTH = 720, 1280 
+IMAGE_HEIGHT , IMAGE_WIDTH = 1280, 720 
 SEQUENCE_LENGTH = 30
 DATASET_DIR = '../media' 
 
