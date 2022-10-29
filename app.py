@@ -109,7 +109,7 @@ def frames_extraction(nombre_archivo):
     video_reader.release()
     keypoints.append(errores)
     return keypoints
-    
+     
 def frames_extraction_web(nombre_archivo):
     import numpy as np
     import mediapipe as mp
