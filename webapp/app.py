@@ -6,8 +6,8 @@ import dask.bag as db
 from flask_cors import CORS
 
 
-semaforo = multiprocessing.Semaphore(1); #Crear variable semáforo
-semaforo_2 = multiprocessing.Semaphore(1); #Crear variable semáforo
+#semaforo = multiprocessing.Semaphore(1); #Crear variable semáforo
+#semaforo_2 = multiprocessing.Semaphore(1); #Crear variable semáforo
 
 app = Flask(__name__)
 CORS(app)
@@ -16,7 +16,7 @@ CORS(app)
 def home():
     return "Asd"
 
-IMAGE_HEIGHT , IMAGE_WIDTH = 320, 180 
+IMAGE_HEIGHT , IMAGE_WIDTH = 1280, 720 
 SEQUENCE_LENGTH = 30
 DATASET_DIR = '../media' 
 
@@ -25,13 +25,13 @@ def return_in_queue(queue, func, it):
     queue.put(func(it))
 
 def run_in_subprocess(it, func):    
-    semaforo.acquire()
+    #semaforo.acquire()
     queue = multiprocessing.Queue()
     process = multiprocessing.Process(target=return_in_queue, args=(queue, func, it))
     process.start()
     ret = queue.get()
     process.join()
-    semaforo.release()
+    #semaforo.release()
 
     return ret
 
@@ -91,11 +91,11 @@ def frames_extraction(nombre_archivo):
       if not success:
           return "Error"
       with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-        _, results = mediapipe_detection(cv2.resize(frame, (IMAGE_WIDTH, IMAGE_HEIGHT)), holistic)
-        pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else zero(33*4,"pose",0)
-        face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else zero(468*3,"cara",1)
-        lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else zero(21*3,"mano izq",2)
-        rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else zero(21*3,"mano der",3)
+        _, results = mediapipe_detection(cv2.rotate(cv2.resize(frame, (IMAGE_WIDTH, IMAGE_HEIGHT)), cv2.ROTATE_180), holistic)
+        pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else zero(33*4,"pose")
+        face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else zero(468*3,"cara")
+        lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else zero(21*3,"mano izq")
+        rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else zero(21*3,"mano der")
         if results.pose_landmarks is None:
             errores[0]+=1
         if results.face_landmarks is None:
@@ -149,7 +149,7 @@ def frames_extraction_web(nombre_archivo):
       if not success:
           return "Error"
       with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-        _, results = mediapipe_detection(cv2.rotate(cv2.resize(frame, (IMAGE_WIDTH, IMAGE_HEIGHT)), cv2.ROTATE_180), holistic)
+        _, results = mediapipe_detection(cv2.resize(frame, (IMAGE_WIDTH, IMAGE_HEIGHT)), holistic)
         pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else zero(33*4,"pose")
         face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else zero(468*3,"cara")
         lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else zero(21*3,"mano izq")
@@ -173,7 +173,7 @@ def frames_extraction_web(nombre_archivo):
 def send_video():
     import tensorflow as tf
     import numpy as np
-    semaforo_2.acquire()
+    #semaforo_2.acquire()
     video = request.files.get('video')
     position = request.form.get('position')
     category = request.form.get('category')
@@ -184,7 +184,7 @@ def send_video():
     result = None
     if video is None:
         return "No se envio el video"
-    if web: 
+    if web == 'true': 
         result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction_web)
     else:
         result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction)
@@ -202,13 +202,13 @@ def send_video():
         for cantidad in cantidad_errores:
             if cantidad>15:
                 if i == 0:
-                    message += "No se pudo detectar la pose\n"
+                    message += "No se pudo detectar la pose \n"
                 elif i ==1:
-                    message += "No se pudo detectar la cara\n"
+                    message += "No se pudo detectar la cara \n"
                 elif i == 2:
-                    message += "No se pudo detectar la mano izquierda\n"
+                    message += "No se pudo detectar la mano izquierda \n"
                 elif i == 3:
-                    message += "No se pudo detectar la mano derecha\n"
+                    message += "No se pudo detectar la mano derecha \n"
             i+=1
     if message != '':
         respuesta = {
@@ -216,8 +216,9 @@ def send_video():
         'validation': 'REINTENTAR',
         'prediction': str(predictions)
         }
+        print(respuesta)
         return respuesta
-    semaforo_2.release()    
+    #semaforo_2.release()    
     max = np.argmax(predictions[0])
     booleano = (max == int(position))
     respuesta = {
@@ -225,6 +226,7 @@ def send_video():
         'validation': 'CORRECTA' if booleano else 'INCORRECTA',
         'prediction': str(predictions)
     }
+    print(respuesta)
     return respuesta
     
 if __name__ == '__main__':
