@@ -174,60 +174,63 @@ def send_video():
     import tensorflow as tf
     import numpy as np
     #semaforo_2.acquire()
-    video = request.files.get('video')
-    position = request.form.get('position')
-    category = request.form.get('category')
-    web = request.form.get('web')
-    nombre_archivo = video.filename
-    video.save(dst=nombre_archivo)
-    print(nombre_archivo)
-    result = None
-    if video is None:
-        return "No se envio el video"
-    if web == 'true': 
-        result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction_web)
-    else:
-        result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction)
-    respuesta = result.compute()
-    file_name = './modelos/' + str(category) + ".h5"
-    cantidad_errores = None
-    if len(respuesta[0])==31:
-        cantidad_errores = respuesta[0].pop(30)
-    predictions = tf.keras.models.load_model(file_name, compile = True).predict(np.asarray(respuesta))
-    print("FINALIZANDO")
-    os.remove(nombre_archivo)
-    message = ''
-    i = 0
-    if cantidad_errores:
-        for cantidad in cantidad_errores:
-            if cantidad>15:
-                if i == 0:
-                    message += "No se pudo detectar la pose \n"
-                elif i ==1:
-                    message += "No se pudo detectar la cara \n"
-                elif i == 2:
-                    message += "No se pudo detectar la mano izquierda \n"
-                elif i == 3:
-                    message += "No se pudo detectar la mano derecha \n"
-            i+=1
-    if message != '':
+    try:
+        video = request.files.get('video')
+        position = request.form.get('position')
+        category = request.form.get('category')
+        web = request.form.get('web')
+        nombre_archivo = video.filename
+        video.save(dst=nombre_archivo)
+        print(nombre_archivo)
+        result = None
+        if video is None:
+            return "No se envio el video"
+        if web == 'true': 
+            result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction_web)
+        else:
+            result = db.from_sequence([nombre_archivo], partition_size=1).map(run_in_subprocess, frames_extraction)
+        respuesta = result.compute()
+        file_name = './modelos/' + str(category) + ".h5"
+        cantidad_errores = None
+        if len(respuesta[0])==31:
+            cantidad_errores = respuesta[0].pop(30)
+        predictions = tf.keras.models.load_model(file_name, compile = True).predict(np.asarray(respuesta))
+        print("FINALIZANDO")
+        os.remove(nombre_archivo)
+        message = ''
+        i = 0
+        if cantidad_errores:
+            for cantidad in cantidad_errores:
+                if cantidad>15:
+                    if i == 0:
+                        message += "No se pudo detectar la pose \n"
+                    elif i ==1:
+                        message += "No se pudo detectar la cara \n"
+                    elif i == 2:
+                        message += "No se pudo detectar la mano izquierda \n"
+                    elif i == 3:
+                        message += "No se pudo detectar la mano derecha \n"
+                i+=1
+        if message != '':
+            respuesta = {
+            'response': message,
+            'validation': 'REINTENTAR',
+            'prediction': str(predictions)
+            }
+            print(respuesta)
+            return respuesta
+        #semaforo_2.release()    
+        max = np.argmax(predictions[0])
+        booleano = (max == int(position))
         respuesta = {
-        'response': message,
-        'validation': 'REINTENTAR',
-        'prediction': str(predictions)
+            'response': "La seña realizada es correcta" if booleano else "La seña realizada es incorrecta",
+            'validation': 'CORRECTA' if booleano else 'INCORRECTA',
+            'prediction': str(predictions)
         }
         print(respuesta)
         return respuesta
-    #semaforo_2.release()    
-    max = np.argmax(predictions[0])
-    booleano = (max == int(position))
-    respuesta = {
-        'response': "La seña realizada es correcta" if booleano else "La seña realizada es incorrecta",
-        'validation': 'CORRECTA' if booleano else 'INCORRECTA',
-        'prediction': str(predictions)
-    }
-    print(respuesta)
-    return respuesta
+    except Exception as e:
+        return e
     
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
