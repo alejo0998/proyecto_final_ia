@@ -105,7 +105,7 @@ def frames_extraction(nombre_archivo):
         if results.right_hand_landmarks is None:
             errores[3]+=1
         keypoints.append(np.concatenate([pose, face, lh, rh]))
-        print (keypoints)
+        #print (keypoints)
     video_reader.release()
     keypoints.append(errores)
     return keypoints
@@ -114,7 +114,7 @@ def frames_extraction_web(nombre_archivo):
     import numpy as np
     import mediapipe as mp
     import cv2
-    print("Estoy extrayendo los frames")
+    print("Estoy extrayendo los frames web")
     '''
     This function will extract the required frames from a video after resizing and normalizing them.
     Args:
@@ -149,7 +149,7 @@ def frames_extraction_web(nombre_archivo):
       if not success:
           return "Error"
       with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-        _, results = mediapipe_detection(cv2.resize(frame, (IMAGE_WIDTH, IMAGE_HEIGHT)), holistic)
+        _, results = mediapipe_detection( cv2.rotate(cv2.resize(frame, (IMAGE_WIDTH, IMAGE_HEIGHT)), cv2.ROTATE_180) , holistic)
         pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else zero(33*4,"pose")
         face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else zero(468*3,"cara")
         lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else zero(21*3,"mano izq")
@@ -163,7 +163,7 @@ def frames_extraction_web(nombre_archivo):
         if results.right_hand_landmarks is None:
             errores[3]+=1
         keypoints.append(np.concatenate([pose, face, lh, rh]))
-        print (keypoints)
+        #print (keypoints)
     video_reader.release()
     keypoints.append(errores)
     return keypoints
