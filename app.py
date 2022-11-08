@@ -199,18 +199,25 @@ def send_video():
         os.remove(nombre_archivo)
         message = ''
         i = 0
+        j = 0
         if cantidad_errores:
             for cantidad in cantidad_errores:
                 if cantidad>15:
                     if i == 0:
-                        message += "No se pudo detectar la pose \n"
+                        message = "No se pudo detectar una parte de tu cuerpo"
+                        j+=1
                     elif i ==1:
-                        message += "No se pudo detectar la cara \n"
+                        message = "No se pudo detectar una parte de tu cuerpo"
+                        j+=1
                     elif i == 2:
-                        message += "No se pudo detectar la mano izquierda \n"
+                        message = "No se pudo detectar una parte de tu cuerpo"
+                        j+=1
                     elif i == 3:
-                        message += "No se pudo detectar la mano derecha \n"
+                        message = "No se pudo detectar una parte de tu cuerpo"
+                        j+=1
                 i+=1
+        if i==4:
+            message = "No se pudo detectar tu cuerpo"
         if message != '':
             respuesta = {
             'response': message,
