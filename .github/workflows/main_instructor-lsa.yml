@@ -60,4 +60,4 @@ jobs:
         with:
           app-name: 'instructor-lsa'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_F4E92973EBBE4CB8A92E4334D007040B }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_D0BCE76BEF684CC38B5F18294CED02F8 }}
