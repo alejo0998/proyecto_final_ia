@@ -197,28 +197,13 @@ def send_video():
         predictions = tf.keras.models.load_model(file_name, compile = True).predict(np.asarray(respuesta))
         print("FINALIZANDO")
         os.remove(nombre_archivo)
-        message = ''
-        i = 0
-        j = 0
+        message = None
         if cantidad_errores:
             for cantidad in cantidad_errores:
-                if cantidad>15:
-                    if i == 0:
-                        message = "No se pudo detectar una parte de tu cuerpo"
-                        j+=1
-                    elif i ==1:
-                        message = "No se pudo detectar una parte de tu cuerpo"
-                        j+=1
-                    elif i == 2:
-                        message = "No se pudo detectar una parte de tu cuerpo"
-                        j+=1
-                    elif i == 3:
-                        message = "No se pudo detectar una parte de tu cuerpo"
-                        j+=1
-                i+=1
-        if i==4:
-            message = "No se pudo detectar tu cuerpo"
-        if message != '':
+                if cantidad>20:
+                    message = "No se pudo detectar una parte de tu cuerpo"
+
+        if message:
             respuesta = {
             'response': message,
             'validation': 'REINTENTAR',
@@ -237,7 +222,10 @@ def send_video():
         print(respuesta)
         return respuesta
     except Exception as e:
-        return e
+        respuesta = {
+            'error': str(e)
+        }
+        return respuesta
     
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
